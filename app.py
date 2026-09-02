@@ -41,12 +41,5 @@ with tab2:
 
 with tab3:
     st.header("Prediksi Pasien Baru")
-    try:
-        model = joblib.load('model_tb_final.pkl')
-        st.success("Model siap")
-    except:
-        st.warning("Latih model dulu di Tab 2")
-        model = None
-    if model:
-        # ... input form sama seperti sebelumnya ...
-        st.info("Isi data pasien di sini")
+    st.info("Isi data pasien di sini")
+    #... input form sama seperti sebelumnya...
