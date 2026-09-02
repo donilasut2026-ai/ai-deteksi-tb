@@ -65,15 +65,24 @@ with tab3:
             nlr = st.number_input("NLR", 1.0, 10.0, 2.5, 0.1)
             rontgen = st.selectbox("Skor Rontgen", [0,1,2,3], format_func=lambda x: ["Normal", "Kecurigaan Ringan", "Kecurigaan Sedang", "Kecurigaan Tinggi"][x])
 
-        if st.button("🔍 Prediksi Sekarang", type="primary"):
-            data_baru = pd.DataFrame([[
-                usia, bb_turun, batuk,
-                1 if keringat=="Ya" else 0,
-                1 if demam=="Ya" else 0,
-                1 if kontak=="Ya" else 0,
-                1 if dm=="Ya" else 0,
-                led, nlr, rontgen
-            ]], columns=['usia','bb_turun_kg','batuk_minggu','keringat_malam','demam_sore','kontak_tb','dm','led','nlr','hasil_rontgen_skor'])
+       if st.button("🔍 Prediksi Sekarang", type="primary"):
+            # 1. Bikin dict dulu biar urutannya pasti sama
+            input_dict = {
+                'usia': usia, 
+                'bb_turun_kg': bb_turun, 
+                'batuk_minggu': batuk,
+                'keringat_malam': 1 if keringat=="Ya" else 0,
+                'demam_sore': 1 if demam=="Ya" else 0,
+                'kontak_tb': 1 if kontak=="Ya" else 0,
+                'dm': 1 if dm=="Ya" else 0,
+                'led': led, 
+                'nlr': nlr, 
+                'hasil_rontgen_skor': rontgen
+            }
+            
+            # 2. Ubah ke DataFrame dan paksa urutannya sama dengan waktu training
+            feature_columns = ['usia','bb_turun_kg','batuk_minggu','keringat_malam','demam_sore','kontak_tb','dm','led','nlr','hasil_rontgen_skor']
+            data_baru = pd.DataFrame([input_dict])[feature_columns]
 
             prediksi = model.predict(data_baru)[0]
             proba = model.predict_proba(data_baru)[0]
