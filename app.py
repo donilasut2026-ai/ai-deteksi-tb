@@ -8,15 +8,15 @@ from sklearn.metrics import accuracy_score, classification_report
 
 st.set_page_config(page_title="AI-TB Scanner", layout="wide")
 st.title("🩺 AI-TB Scanner: Skrining & Prediksi TB")
-st.markdown("Aplikasi AI untuk stratifikasi risiko TB Aktif vs TB Laten di Fasyankes Tingkat Pertama")
 
 tab1, tab2, tab3 = st.tabs(["📖 Petunjuk", "🧠 Latih Model", "🔍 Prediksi Pasien"])
+
+FEATURES = ['usia','bb_turun_kg','batuk_minggu','keringat_malam','demam_sore','kontak_tb','dm','led','nlr','hasil_rontgen_skor']
 
 with tab1:
     st.header("Petunjuk Penggunaan")
     st.write("1. Tab 2: Upload data 100 pasien dan latih model")
     st.write("2. Tab 3: Isi data pasien baru untuk prediksi")
-    st.write("Fitur: usia, bb_turun_kg, batuk_minggu, keringat_malam, demam_sore, kontak_tb, dm, led, nlr, hasil_rontgen_skor")
 
 with tab2:
     st.header("Latih Model AI")
@@ -31,8 +31,8 @@ with tab2:
         st.dataframe(df.head())
 
         if st.button("🚀 Latih Model", type="primary"):
-            X = df.drop('label', axis=1)
-            y = df['label']
+            X = df[FEATURES].values # <-- KUNCI: pakai.values biar tidak ada nama kolom
+            y = df['label'].values
 
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -46,7 +46,7 @@ with tab2:
             st.text(classification_report(y_test, y_pred))
 
             joblib.dump(model, 'model_tb_final.pkl')
-            st.success("Model berhasil disimpan!")
+            st.success("Model berhasil disimpan! Silakan ke Tab 3")
 
 with tab3:
     st.header("Prediksi Pasien Baru")
@@ -75,21 +75,17 @@ with tab3:
             rontgen = st.selectbox("Skor Rontgen", [0,1,2,3], format_func=lambda x: ["Normal", "Kecurigaan Ringan", "Kecurigaan Sedang", "Kecurigaan Tinggi"][x])
 
         if st.button("🔍 Prediksi Sekarang", type="primary"):
-            input_dict = {
-                'usia': usia,
-                'bb_turun_kg': bb_turun,
-                'batuk_minggu': batuk,
-                'keringat_malam': 1 if keringat=="Ya" else 0,
-                'demam_sore': 1 if demam=="Ya" else 0,
-                'kontak_tb': 1 if kontak=="Ya" else 0,
-                'dm': 1 if dm=="Ya" else 0,
-                'led': led,
-                'nlr': nlr,
-                'hasil_rontgen_skor': rontgen
-            }
+            # KUNCI: Bikin list biasa, bukan DataFrame dengan nama kolom
+            input_list = [
+                usia, bb_turun, batuk,
+                1 if keringat=="Ya" else 0,
+                1 if demam=="Ya" else 0,
+                1 if kontak=="Ya" else 0,
+                1 if dm=="Ya" else 0,
+                led, nlr, rontgen
+            ]
 
-            feature_columns = ['usia','bb_turun_kg','batuk_minggu','keringat_malam','demam_sore','kontak_tb','dm','led','nlr','hasil_rontgen_skor']
-            data_baru = pd.DataFrame([input_dict])[feature_columns]
+            data_baru = np.array([input_list]) # <-- KUNCI: pakai numpy array
 
             prediksi = model.predict(data_baru)[0]
             proba = model.predict_proba(data_baru)[0]
