@@ -41,5 +41,54 @@ with tab2:
 
 with tab3:
     st.header("Prediksi Pasien Baru")
-    st.info("Isi data pasien di sini")
-    #... input form sama seperti sebelumnya...
+    try:
+        model = joblib.load('model_tb_final.pkl')
+        st.success("✅ Model siap digunakan")
+    except:
+        st.warning("⚠️ Latih model dulu di Tab 2")
+        model = None
+
+    if model:
+        st.markdown("#### Isi data pasien di sini")
+        col1, col2 = st.columns(2)
+        with col1:
+            usia = st.number_input("Usia", 18, 90, 30)
+            bb_turun = st.number_input("Penurunan BB (kg)", 0.0, 20.0, 0.0, 0.1)
+            batuk = st.number_input("Lama Batuk (minggu)", 0, 12, 0)
+            keringat = st.selectbox("Keringat Malam", ["Tidak", "Ya"])
+            demam = st.selectbox("Demam Sore", ["Tidak", "Ya"])
+
+        with col2:
+            kontak = st.selectbox("Riwayat Kontak TB", ["Tidak", "Ya"])
+            dm = st.selectbox("Riwayat DM", ["Tidak", "Ya"])
+            led = st.number_input("LED (mm/jam)", 5, 100, 20)
+            nlr = st.number_input("NLR", 1.0, 10.0, 2.5, 0.1)
+            rontgen = st.selectbox("Skor Rontgen", [0,1,2,3], format_func=lambda x: ["Normal", "Kecurigaan Ringan", "Kecurigaan Sedang", "Kecurigaan Tinggi"][x])
+
+        if st.button("🔍 Prediksi Sekarang", type="primary"):
+            data_baru = pd.DataFrame([[
+                usia, bb_turun, batuk,
+                1 if keringat=="Ya" else 0,
+                1 if demam=="Ya" else 0,
+                1 if kontak=="Ya" else 0,
+                1 if dm=="Ya" else 0,
+                led, nlr, rontgen
+            ]], columns=['usia','bb_turun_kg','batuk_minggu','keringat_malam','demam_sore','kontak_tb','dm','led','nlr','hasil_rontgen_skor'])
+
+            prediksi = model.predict(data_baru)[0]
+            proba = model.predict_proba(data_baru)[0]
+            label_map = {0: "Sehat", 1: "TB Laten", 2: "TB Aktif"}
+
+            st.subheader("📋 Hasil Prediksi:")
+            if prediksi == 2:
+                st.error(f"**Hasil: {label_map[prediksi]}**")
+                st.write(f"Probabilitas: {proba[prediksi]*100:.1f}%")
+                st.write("**Rekomendasi:** Segera rujuk untuk tes TCM")
+            elif prediksi == 1:
+                st.warning(f"**Hasil: {label_map[prediksi]}**")
+                st.write(f"Probabilitas: {proba[prediksi]*100:.1f}%")
+                st.write("**Rekomendasi:** Pertimbangkan Terapi Pencegahan TB")
+            else:
+                st.success(f"**Hasil: {label_map[prediksi]}**")
+                st.write(f"Probabilitas: {proba[prediksi]*100:.1f}%")
+                st.write("**Rekomendasi:** Edukasi & pantau")
